@@ -1,1 +1,0 @@
-"""Sorteador Geral - Backend."""
