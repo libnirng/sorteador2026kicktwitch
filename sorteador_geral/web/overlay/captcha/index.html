@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Overlay Captcha</title>
+    <style>
+        body { margin: 0; background: transparent; font-family: 'Segoe UI', sans-serif; color: #fff; }
+        .captcha-box {
+            display: inline-block;
+            padding: 18px 28px;
+            background: rgba(0, 0, 0, 0.85);
+            border: 2px solid #ffd700;
+            border-radius: 12px;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.4);
+            text-align: center;
+        }
+        .captcha-label {
+            font-size: 14px;
+            color: #ffd700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+        .captcha-q {
+            font-size: 24px;
+            font-weight: 700;
+            color: #fff;
+            margin: 0;
+        }
+        .captcha-hint {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+    <div class="captcha-box" id="captcha-box" style="display:none">
+        <div class="captcha-label">🛡️ Confirme sua vitória</div>
+        <p class="captcha-q" id="captcha-q">Carregando...</p>
+        <div class="captcha-hint" id="captcha-feedback">Digite a resposta no chat</div>
+    </div>
+
+    <script>
+        const base = `${location.protocol}//${location.host}`;
+        const box = document.getElementById('captcha-box');
+        const q = document.getElementById('captcha-q');
+
+        async function poll() {
+            try {
+                const r = await fetch('/api/state');
+                const s = await r.json();
+                const c = (s.giveaway || {}).captcha;
+                if (c) {
+                    box.style.display = '';
+                    q.textContent = c.question;
+                    document.getElementById('captcha-feedback').textContent = c.deadline
+                        ? `Digite a resposta no chat. ${Math.max(0,Math.ceil(c.deadline-Date.now()/1000))}s restantes`
+                        : 'Presença confirmada. Digite o código no chat (sem contagem regressiva).';
+                } else if (s.giveaway?.current_winner?.captcha_failed && s.giveaway?.captcha_feedback?.status==='wrong') {
+                    box.style.display = '';
+                    q.textContent = `Resposta correta: ${s.giveaway.captcha_feedback.expected || 'consulte o organizador'}`;
+                    document.getElementById('captcha-feedback').textContent = 'Resposta incorreta. Cronômetro encerrado; aguarde o organizador.';
+                } else {
+                    box.style.display = 'none';
+                }
+            } catch (e) {
+                // silencioso
+            }
+        }
+        setInterval(poll, 500);
+        poll();
+    </script>
+</body>
+</html>
